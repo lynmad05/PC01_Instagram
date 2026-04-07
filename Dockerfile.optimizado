@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────
+# Dockerfile.optimizado
+# - Usa Alpine (imagen más liviana)
+# - Usuario no-root (seguridad)
+# - Health check incluido
+# ─────────────────────────────────────────────
+
+# Imagen Alpine para menor tamaño
+FROM python:3.11-alpine
+
+# Instalar dependencias del sistema en una sola capa (reduce capas y tamaño)
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers \
+    ffmpeg
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Copiar e instalar dependencias primero (aprovecha el cache de Docker)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el código de la aplicación
+COPY app.py .
+
+# Crear usuario no-root por seguridad
+RUN adduser -D appuser && chown -R appuser /app
+USER appuser
+
+# Exponer puerto
+EXPOSE 5000
+
+# Health check: verifica que la app responde cada 30 segundos
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000')" || exit 1
+
+# Comando de inicio
+CMD ["python", "app.py"]

@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────
+# Dockerfile.multistage
+# - Etapa 1 (builder): instala dependencias y compila
+# - Etapa 2 (final):   solo copia lo necesario para ejecutar
+# Resultado: imagen final mucho más pequeña y segura
+# ─────────────────────────────────────────────
+
+# ── ETAPA 1: Builder ──────────────────────────
+# Esta etapa compila e instala todo lo necesario
+FROM python:3.11-alpine AS builder
+
+# Dependencias de sistema necesarias para compilar
+RUN apk add --no-cache gcc musl-dev linux-headers
+
+WORKDIR /app
+
+# Instalar dependencias Python en una carpeta local (no en el sistema)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+# ── ETAPA 2: Imagen Final ─────────────────────
+# Solo copiamos los artefactos necesarios del builder
+# No incluye gcc, musl-dev ni herramientas de compilación
+FROM python:3.11-alpine
+
+# ffmpeg es necesario en runtime para yt-dlp
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+# Copiar paquetes Python instalados en la etapa builder
+COPY --from=builder /install /usr/local
+
+# Copiar solo el código de la aplicación
+COPY app.py .
+
+# Crear usuario no-root por seguridad
+RUN adduser -D appuser && chown -R appuser /app
+USER appuser
+
+# Exponer el puerto
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000')" || exit 1
+
+# Comando de inicio
+CMD ["python", "app.py"]
