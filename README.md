@@ -53,7 +53,15 @@ docker images | grep instagram-dl
 ## ▶️ 4. Ejecutar el contenedor
 
 ```bash
+
+### Versión base
 docker run -d -p 5000:5000 --name instagram-app instagram-dl:v1.0
+
+### Versión optimizada
+docker run -d -p 5000:5000 --name instagram-app instagram-dl:v1.1-alpine
+
+### Versión multistage
+docker run -d -p 5000:5000 --name instagram-app instagram-dl:v1.2-multistage
 ```
 
 📌 Nota:
