@@ -15,7 +15,7 @@ La aplicación ha sido contenerizada utilizando Docker, implementando tres versi
 
 ```bash
 git clone https://github.com/lynmad05/PC01_Instagram.git
-cd practica_sem04
+cd PC01_Instagram
 ```
 
 ---
